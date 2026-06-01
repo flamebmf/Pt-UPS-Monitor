@@ -1,0 +1,282 @@
+# ============================================================
+# apcupsd_zabbix_template_agent.yaml — Zabbix template for APC UPS
+# Copyright (C) 2024-2025 PlurumTech.com
+# Licensed under GNU GPL v3 — https://www.gnu.org/licenses/gpl-3.0.html
+# ============================================================
+zabbix_export:
+  version: '7.4'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 51ae7629e80a4d84b2108032e772ebde
+      template: 'APC by Zabbix agent  apcupsd wired'
+      name: 'APC by Zabbix agent  apcupsd wired'
+      description: 'APC by Zabbix agent + apcupsd Smart-UPS'
+      groups:
+        - name: Templates
+      items:
+        - uuid: 826664a26bbb4607aa5d6a402f881bf5
+          name: apcups.charge
+          key: apcups.charge
+          delay: 2m
+          value_type: FLOAT
+          units: Percent
+          triggers:
+            - uuid: 0db3c2fc776542e68cf6080b804033f6
+              expression: 'last(/APC by Zabbix agent  apcupsd wired/apcups.charge,#1:now)<20'
+              name: 'Low charging level'
+              event_name: 'Low charging level'
+              priority: WARNING
+              manual_close: 'YES'
+        - uuid: 485b61dc19994180ab989088306c3ea3
+          name: apcups.lasterr
+          key: apcups.lasterr
+          value_type: TEXT
+        - uuid: 30f93ab53ba243bd90c35ef773c61a9b
+          name: apcups.load
+          key: apcups.load
+          delay: 2m
+          value_type: FLOAT
+          units: Percent
+        - uuid: 0c2d19611284418f849552fed88f5467
+          name: apcups.name
+          key: apcups.name
+          delay: 1d
+          value_type: TEXT
+        - uuid: 4227c5a7df1d42c8a460931b9b91810b
+          name: apcups.status
+          key: apcups.status
+          delay: 2m
+          value_type: TEXT
+        - uuid: eceacca9f3b34c6096d4fd078a402aa6
+          name: apcups.volts
+          key: apcups.volts
+          delay: 2m
+          value_type: FLOAT
+          units: Volts
+          triggers:
+            - uuid: 67b64fe1864141e1995198ce37ec2ceb
+              expression: 'last(/APC by Zabbix agent  apcupsd wired/apcups.volts,#1:now)>245'
+              name: 'Hi Voltage'
+              event_name: 'Hi Voltage on Line Input'
+              priority: WARNING
+              manual_close: 'YES'
+            - uuid: 4f76839279a94d67a8988f486c5cd891
+              expression: 'last(/APC by Zabbix agent  apcupsd wired/apcups.volts,#1:now)<192'
+              name: 'Low Voltage'
+              event_name: 'Low Voltage in input line'
+              priority: WARNING
+              manual_close: 'YES'
+      tags:
+        - tag: class
+          value: power
+        - tag: target
+          value: apc
+        - tag: target
+          value: apcupsd
+        - tag: target
+          value: Smart-USP
+      dashboards:
+        - uuid: 8521c2b778714e7e81a1d72f0a8c2d50
+          name: UPS
+          pages:
+            - widgets:
+                - type: svggraph
+                  name: 'Input Volts'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: apcups.volts
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '3'
+                    - type: STRING
+                      name: reference
+                      value: JQUYJ
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: svggraph
+                  name: 'UPS Load'
+                  'y': '5'
+                  width: '72'
+                  height: '5'
+                  fields:
+                    - type: STRING
+                      name: ds.0.color
+                      value: FF465C
+                    - type: STRING
+                      name: ds.0.items.0
+                      value: apcups.load
+                    - type: INTEGER
+                      name: ds.0.missingdatafunc
+                      value: '3'
+                    - type: STRING
+                      name: reference
+                      value: XCXWP
+                    - type: INTEGER
+                      name: righty
+                      value: '0'
+                - type: gauge
+                  name: 'UPS Current Charge Level'
+                  'y': '10'
+                  width: '27'
+                  height: '6'
+                  fields:
+                    - type: STRING
+                      name: empty_color
+                      value: 66BB6A
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'APC by Zabbix agent  apcupsd wired'
+                        key: apcups.charge
+                    - type: STRING
+                      name: max
+                      value: '100'
+                    - type: STRING
+                      name: min
+                      value: '0'
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '5'
+                    - type: STRING
+                      name: thresholds.0.color
+                      value: E65660
+                    - type: STRING
+                      name: thresholds.0.threshold
+                      value: '0'
+                    - type: STRING
+                      name: thresholds.1.color
+                      value: FCCB1D
+                    - type: STRING
+                      name: thresholds.1.threshold
+                      value: '60'
+                    - type: STRING
+                      name: thresholds.2.color
+                      value: 3BC97D
+                    - type: STRING
+                      name: thresholds.2.threshold
+                      value: '80'
+                    - type: INTEGER
+                      name: th_show_arc
+                      value: '1'
+                    - type: INTEGER
+                      name: units_size
+                      value: '20'
+                    - type: INTEGER
+                      name: value_arc_size
+                      value: '15'
+                    - type: INTEGER
+                      name: value_size
+                      value: '20'
+                - type: item
+                  name: 'APC TYPE'
+                  x: '27'
+                  'y': '10'
+                  width: '23'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: 4FC3F7
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'APC by Zabbix agent  apcupsd wired'
+                        key: apcups.name
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                - type: item
+                  name: 'Last Line Transfer Reason'
+                  x: '27'
+                  'y': '13'
+                  width: '45'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: EF5350
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'APC by Zabbix agent  apcupsd wired'
+                        key: apcups.lasterr
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+                - type: item
+                  name: 'UPS Status'
+                  x: '50'
+                  'y': '10'
+                  width: '22'
+                  height: '3'
+                  fields:
+                    - type: STRING
+                      name: bg_color
+                      value: 4FC3F7
+                    - type: ITEM
+                      name: itemid.0
+                      value:
+                        host: 'APC by Zabbix agent  apcupsd wired'
+                        key: apcups.status
+                    - type: INTEGER
+                      name: show.0
+                      value: '2'
+                    - type: INTEGER
+                      name: show.1
+                      value: '3'
+                    - type: INTEGER
+                      name: show.2
+                      value: '4'
+  graphs:
+    - uuid: c0c75f84540d4450968a7aaf8e5132f6
+      name: 'Batt Charge'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'APC by Zabbix agent  apcupsd wired'
+            key: apcups.charge
+    - uuid: 14bcb0f7822347788b42a44d62b61970
+      name: 'Input Volts'
+      graph_items:
+        - color: 1A7C11
+          calc_fnc: ALL
+          item:
+            host: 'APC by Zabbix agent  apcupsd wired'
+            key: apcups.volts
+    - uuid: cdb843adc3444762bfdd12e89514288b
+      name: 'UPS Load'
+      show_work_period: 'NO'
+      show_triggers: 'NO'
+      graph_items:
+        - color: F44336
+          calc_fnc: ALL
+          item:
+            host: 'APC by Zabbix agent  apcupsd wired'
+            key: apcups.load
