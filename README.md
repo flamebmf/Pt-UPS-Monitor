@@ -1,6 +1,6 @@
 # Pt UPS Monitor
 
-APC UPS monitoring stack — data collector, web dashboard, and Zabbix integration.
+APC Smart-UPS monitoring stack — data collector, web dashboard, and Zabbix integration. Works with `apcupsd` daemon on Linux.
 
 ## Components
 
