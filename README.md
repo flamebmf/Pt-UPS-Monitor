@@ -1,5 +1,7 @@
 # Pt UPS Monitor
 
+![Pt UPS Monitor Dashboard](card.jpg)
+
 APC Smart-UPS monitoring stack — real-time dashboard, historical data collector, and Zabbix
 integration for APC Smart-UPS 750/1000/1500/2200/3000 and other models supported by `apcupsd`.
 Monitors input voltage, battery charge, UPS load, temperature, and remaining runtime.
