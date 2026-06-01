@@ -1,6 +1,12 @@
 # Pt UPS Monitor
 
-APC Smart-UPS monitoring stack — data collector, web dashboard, and Zabbix integration. Works with `apcupsd` daemon on Linux.
+APC Smart-UPS monitoring stack — real-time dashboard, historical data collector, and Zabbix
+integration for APC Smart-UPS 750/1000/1500/2200/3000 and other models supported by `apcupsd`.
+Monitors input voltage, battery charge, UPS load, temperature, and remaining runtime.
+Works with the `apcupsd` NUT-compatible daemon on Linux servers.
+
+**Use case**: server room UPS monitoring, home lab power tracking, data center APC Smart-UPS
+supervision via SNMP-less lightweight agent.
 
 ## Components
 
@@ -12,6 +18,17 @@ APC Smart-UPS monitoring stack — data collector, web dashboard, and Zabbix int
 | `apcupsd_zabbix_template_agent.yaml` | Zabbix template (import) |
 | `zabbix_agent_apcupsd.conf` | Zabbix agent UserParameters |
 | `install.sh` | Installer — RHEL & Debian/Ubuntu |
+
+## Features
+
+- **Real-time dashboard** — ApexCharts, PlurumTech dark theme, synchronized time axis
+- **Historical data** — MySQL/MariaDB storage, configurable retention
+- **Zabbix integration** — ready-to-import template + agent UserParameters
+- **Battery monitoring** — charge %, estimated runtime, temperature
+- **Power quality** — input voltage tracking with min/max annotations
+- **Load monitoring** — UPS load percentage over time
+- **Shutdown automation** — graceful server shutdown on low battery
+- **Cross-platform** — installer supports RHEL 8/9, Rocky Linux, CentOS, Debian, Ubuntu
 
 ## Quick Start
 
