@@ -19,6 +19,18 @@ APC Smart-UPS monitoring stack — data collector, web dashboard, and Zabbix int
 sudo bash install.sh
 ```
 
+## Requirements
+
+| Component | RHEL/CentOS/Rocky | Debian/Ubuntu |
+|---|---|---|
+| Perl | `perl` | `perl` |
+| DBI | `perl-DBI` | `libdbi-perl` |
+| DBD::mysql | `perl-DBD-MySQL` | `libdbd-mysql-perl` |
+| Apache | `httpd` | `apache2` |
+| MySQL/MariaDB | `mariadb-server` | `mariadb-server` |
+| apcupsd | `apcupsd` | `apcupsd` |
+| Zabbix agent | `zabbix-agent` | `zabbix-agent` |
+
 Installer handles: dependency detection, apcupsd verification, MySQL setup, Apache vhost, cron.
 
 ## License
