@@ -338,7 +338,10 @@ title "Installation plan"
 echo "  Scripts from:  $SCRIPT_DIR"
 echo "  apcupsd stat:  $A_STATUSFILE  (every ${A_STATTIME}s)"
 echo ""
-ask "Proceed?" || { info "Aborted"; exit 0; }
+if ! ask "Proceed?"; then
+    info "Aborted"
+    exit 0
+fi
 
 check_deps
 verify_apcupsd
@@ -348,3 +351,4 @@ install_scripts
 setup_apache
 setup_cron
 print_summary
+
