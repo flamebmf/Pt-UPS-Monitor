@@ -95,7 +95,7 @@ check_deps() {
     local pkgs_perl=("perl" "perl-DBI" "perl-DBD-MySQL")
     local pkgs_deb=("perl" "libdbi-perl" "libdbd-mysql-perl")
 
-    command -v mysql    >/dev/null 2>&1 || { warn "mysql client missing"; apt_or_dnf_install mysql-client mysql; }
+    command -v mysql    >/dev/null 2>&1 || { warn "mysql client missing"; apt_or_dnf_install mysql-client mariadb; }
     command -v apcupsd  >/dev/null 2>&1 || warn "apcupsd not found in PATH"
     command -v rsync    >/dev/null 2>&1 || missing+=("rsync")
 
