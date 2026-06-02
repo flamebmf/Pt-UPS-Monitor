@@ -310,9 +310,6 @@ generate_config() {
             return
         fi
     fi
-    DEST_DIR=$(get "Install scripts to [/usr/local/lib/apcups-monitor]" || echo "/usr/local/lib/apcups-monitor")
-    SHUTDOWN_THRESHOLD=$(get "Shutdown battery threshold % [15]" || echo "15")
-    LOGFILE="/var/log/apcups-collector.log"
 
     cat > "$CONF_FILE" <<-EOCONF
 # APC UPS Monitor configuration — generated $(date)
