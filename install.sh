@@ -321,22 +321,114 @@ EOCRON
 # Summary
 # ============================================================
 print_summary() {
+    ok="${GREEN}OK${NC}";  fail="${RED}FAIL${NC}";  skip="${YELLOW}SKIP${NC}"
     echo
     echo -e "${BOLD}${CYAN}============================================${NC}"
     echo -e "${BOLD}${CYAN}  APC UPS Monitor — Installation Complete${NC}"
     echo -e "${BOLD}${CYAN}============================================${NC}"
     echo
-    echo -e "  Config:     ${GREEN}$CONF_FILE${NC}"
-    echo -e "  Scripts:    ${GREEN}$DEST_DIR${NC}"
-    echo -e "  DB:         ${GREEN}$DB_NAME@$DB_HOST:$DB_PORT${NC}"
-    echo -e "  UI:         ${GREEN}http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl${NC}"
-    echo -e "  Log:        ${GREEN}$LOGFILE${NC}"
-    echo -e "  Cron:       ${GREEN}$CRON_FILE${NC}"
-    echo -e "  Status:     ${GREEN}$A_STATUSFILE${NC}"
+    echo -e "  ${BOLD}Component              Status   Detail${NC}"
+    echo -e "  ${BOLD}──────────────────────────────────────────────${NC}"
+
+    # apcupsd
+    if systemctl is-active --quiet apcupsd 2>/dev/null; then
+        printf "  %-22s %-8s %s\n" "apcupsd" "$ok" "active"
+    else
+        printf "  %-22s %-8s %s\n" "apcupsd" "$fail" "not running"
+    fi
+
+    # MySQL / MariaDB
+    local db_svc=""
+    for s in mysql mariadb mysqld; do
+        systemctl is-active --quiet "$s" 2>/dev/null && { db_svc="$s"; break; }
+    done
+    if [ -n "$db_svc" ]; then
+        printf "  %-22s %-8s %s\n" "$db_svc" "$ok" "active"
+    else
+        printf "  %-22s %-8s %s\n" "MySQL/MariaDB" "$fail" "not running"
+    fi
+
+    # DB reachable
+    local mc="mysql -h $DB_HOST -P $DB_PORT -u $DB_USER"
+    [ -n "$DB_PASS" ] && mc="$mc -p$DB_PASS"
+    if echo "SELECT 1;" | $mc "$DB_NAME" >/dev/null 2>&1; then
+        printf "  %-22s %-8s %s\n" "Database" "$ok" "$DB_NAME@$DB_HOST"
+    else
+        printf "  %-22s %-8s %s\n" "Database" "$fail" "cannot connect"
+    fi
+
+    # Config file
+    if [ -f "$CONF_FILE" ]; then
+        printf "  %-22s %-8s %s\n" "Config" "$ok" "$CONF_FILE"
+    else
+        printf "  %-22s %-8s %s\n" "Config" "$fail" "missing"
+    fi
+
+    # Collector script
+    if [ -f "$DEST_DIR/apcups_collector_mysql.pl" ]; then
+        printf "  %-22s %-8s %s\n" "Collector" "$ok" "$DEST_DIR"
+    else
+        printf "  %-22s %-8s %s\n" "Collector" "$fail" "missing"
+    fi
+
+    # Web UI
+    if [ -f "$DEST_DIR/apcups_ui.pl" ]; then
+        printf "  %-22s %-8s %s\n" "Web UI" "$ok" "$DEST_DIR"
+    else
+        printf "  %-22s %-8s %s\n" "Web UI" "$fail" "missing"
+    fi
+
+    # Apache
+    if systemctl is-active --quiet "$APACHE_SVC" 2>/dev/null; then
+        printf "  %-22s %-8s %s\n" "Apache" "$ok" "$APACHE_SVC active"
+    else
+        printf "  %-22s %-8s %s\n" "Apache" "$fail" "$APACHE_SVC not running"
+    fi
+
+    # Apache vhost
+    if [ -f "$APACHE_CONF_D/apcups-monitor.conf" ]; then
+        printf "  %-22s %-8s %s\n" "Apache vhost" "$ok" "$APACHE_CONF_D"
+    else
+        printf "  %-22s %-8s %s\n" "Apache vhost" "$fail" "missing"
+    fi
+
+    # Cron
+    if [ -f "$CRON_FILE" ]; then
+        printf "  %-22s %-8s %s\n" "Cron" "$ok" "$CRON_FILE"
+    else
+        printf "  %-22s %-8s %s\n" "Cron" "$fail" "missing"
+    fi
+
+    # Zabbix template
+    if [ -f "$SCRIPT_DIR/apcupsd_zabbix_template_agent.yaml" ]; then
+        printf "  %-22s %-8s %s\n" "Zabbix template" "$ok" "import manually"
+    else
+        printf "  %-22s %-8s %s\n" "Zabbix template" "$skip" "not shipped"
+    fi
+
+    # Perl module DBD::mysql
+    if perl -e 'use DBD::mysql;' 2>/dev/null; then
+        printf "  %-22s %-8s %s\n" "Perl DBD::mysql" "$ok" "loaded"
+    else
+        printf "  %-22s %-8s %s\n" "Perl DBD::mysql" "$fail" "missing"
+    fi
+
+    # apcupsd status file
+    if [ -f "$A_STATUSFILE" ]; then
+        local age=$(( $(date +%s) - $(stat -c %Y "$A_STATUSFILE" 2>/dev/null || echo 0) ))
+        if [ "$age" -le 120 ]; then
+            printf "  %-22s %-8s %s\n" "Status file" "$ok" "${age}s old"
+        else
+            printf "  %-22s %-8s %s\n" "Status file" "$fail" "${age}s old (stale)"
+        fi
+    else
+        printf "  %-22s %-8s %s\n" "Status file" "$fail" "not found"
+    fi
+
+    echo -e "  ${BOLD}──────────────────────────────────────────────${NC}"
     echo
-    echo -e "  ${CYAN}Verify:${NC}"
-    echo -e "    tail -f $LOGFILE"
-    echo -e "    $DEST_DIR/apcups_collector_mysql.pl  (dry-run)"
+    echo -e "  ${CYAN}URL:${NC}  http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
+    echo -e "  ${CYAN}Log:${NC}  tail -f $LOGFILE"
     echo
 }
 
