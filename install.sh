@@ -88,6 +88,35 @@ read_apcupsd_conf() {
 }
 
 # ============================================================
+# Existing installation detection
+# ============================================================
+EX_CONF=0; EX_SCRIPTS=0; EX_VHOST=0; EX_CRON=0; EX_DB=0
+check_existing() {
+    title "Checking existing installation"
+    local any=0
+    [ -f "$CONF_FILE" ]    && { warn "Config exists:    $CONF_FILE";    EX_CONF=1;    any=1; }
+    [ -d "$DEST_DIR" ]     && { warn "Scripts in:       $DEST_DIR";    EX_SCRIPTS=1; any=1; }
+    [ -f "$APACHE_CONF_D/apcups-monitor.conf" ] && { warn "Apache vhost:    $APACHE_CONF_D/apcups-monitor.conf"; EX_VHOST=1; any=1; }
+    [ -f "$CRON_FILE" ]    && { warn "Cron:             $CRON_FILE";   EX_CRON=1;    any=1; }
+    # check DB tables
+    local mc="mysql -h $DB_HOST -P $DB_PORT -u $DB_USER"
+    [ -n "$DB_PASS" ] && mc="$mc -p$DB_PASS"
+    echo "SELECT 1 FROM ups_data LIMIT 1;" | $mc "$DB_NAME" >/dev/null 2>&1 && { warn "DB tables exist:  $DB_NAME.ups_data"; EX_DB=1; any=1; }
+
+    if [ "$any" -eq 1 ]; then
+        echo
+        if ! ask "Installation detected — reinstall existing components?"; then
+            info "Skipping installation, showing status only"
+            print_summary
+            exit 0
+        fi
+        echo
+    else
+        info "No previous installation found"
+    fi
+}
+
+# ============================================================
 # Check / install packages
 # ============================================================
 check_deps() {
@@ -192,6 +221,16 @@ setup_mysql() {
             info "MariaDB installed. Run mysql_secure_installation if needed."
         fi
     fi
+}
+
+# ============================================================
+# Prompt for all config values
+# ============================================================
+prompt_config() {
+    title "Configuration"
+    DEST_DIR=$(get "Install scripts to [/usr/local/lib/apcups-monitor]" || echo "/usr/local/lib/apcups-monitor")
+    SHUTDOWN_THRESHOLD=$(get "Shutdown battery threshold % [15]" || echo "15")
+    LOGFILE="/var/log/apcups-collector.log"
 
     DB_HOST=$(get "MySQL host"               || echo "localhost")
     DB_PORT=$(get "MySQL port [3306]"        || echo "3306")
@@ -200,7 +239,45 @@ setup_mysql() {
     DB_PASS=$(get "DB password [apcups]"       || echo "apcups")
     MYSQL_ROOT_USER=$(get "MySQL admin user [root]" || echo "root")
     MYSQL_ROOT_PASS=$(get_silent "MySQL admin password (empty if none)" || echo "")
+}
 
+# ============================================================
+# Existing installation detection
+# ============================================================
+EX_CONF=0; EX_SCRIPTS=0; EX_VHOST=0; EX_CRON=0; EX_DB=0
+check_existing() {
+    title "Checking existing installation"
+    local any=0
+    [ -f "$CONF_FILE" ]    && { warn "Config exists:    $CONF_FILE";    EX_CONF=1;    any=1; }
+    [ -d "$DEST_DIR" ]     && { warn "Scripts in:       $DEST_DIR";    EX_SCRIPTS=1; any=1; }
+    [ -f "$APACHE_CONF_D/apcups-monitor.conf" ] && { warn "Apache vhost:    $APACHE_CONF_D/apcups-monitor.conf"; EX_VHOST=1; any=1; }
+    [ -f "$CRON_FILE" ]    && { warn "Cron:             $CRON_FILE";   EX_CRON=1;    any=1; }
+    local mc="mysql -h $DB_HOST -P $DB_PORT -u $DB_USER"
+    [ -n "$DB_PASS" ] && mc="$mc -p$DB_PASS"
+    echo "SELECT 1 FROM ups_data LIMIT 1;" | $mc "$DB_NAME" >/dev/null 2>&1 && { warn "DB tables exist:  $DB_NAME.ups_data"; EX_DB=1; any=1; }
+
+    if [ "$any" -eq 1 ]; then
+        echo
+        if ! ask "Installation detected — reinstall existing components?"; then
+            info "Skipping installation, showing status only"
+            print_summary
+            exit 0
+        fi
+        echo
+    else
+        info "No previous installation found"
+    fi
+}
+
+# ============================================================
+# DB — create schema
+# ============================================================
+setup_db() {
+    title "Database setup"
+    if [ "$EX_DB" -eq 1 ]; then
+        info "DB tables already exist: $DB_NAME.ups_data (keeping)"
+        return
+    fi
     local mysql_cmd="mysql -h $DB_HOST -P $DB_PORT -u $MYSQL_ROOT_USER"
     [ -n "$MYSQL_ROOT_PASS" ] && mysql_cmd="$mysql_cmd -p$MYSQL_ROOT_PASS"
 
@@ -227,6 +304,12 @@ EOSQL
 # ============================================================
 generate_config() {
     title "Generating $CONF_FILE"
+    if [ "$EX_CONF" -eq 1 ]; then
+        if ! ask "Config already exists — overwrite?"; then
+            info "Keeping existing config: $CONF_FILE"
+            return
+        fi
+    fi
     DEST_DIR=$(get "Install scripts to [/usr/local/lib/apcups-monitor]" || echo "/usr/local/lib/apcups-monitor")
     SHUTDOWN_THRESHOLD=$(get "Shutdown battery threshold % [15]" || echo "15")
     LOGFILE="/var/log/apcups-collector.log"
@@ -254,13 +337,15 @@ EOCONF
 # ============================================================
 install_scripts() {
     title "Installing scripts"
-    mkdir -p "$DEST_DIR" /var/log
-    touch "$LOGFILE"
-
-    install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/"
-    install -m 755 "$SCRIPT_DIR/apcups_ui.pl"               "$DEST_DIR/"
-
-    info "Scripts installed to $DEST_DIR"
+    if [ "$EX_SCRIPTS" -eq 1 ] && ! ask "Scripts already in $DEST_DIR — re-copy?"; then
+        info "Keeping existing scripts"
+    else
+        mkdir -p "$DEST_DIR" /var/log
+        touch "$LOGFILE"
+        install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/"
+        install -m 755 "$SCRIPT_DIR/apcups_ui.pl"               "$DEST_DIR/"
+        info "Scripts installed to $DEST_DIR"
+    fi
 }
 
 # ============================================================
@@ -268,10 +353,11 @@ install_scripts() {
 # ============================================================
 setup_apache() {
     title "Setting up Apache CGI"
-    local ui_path="$DEST_DIR/apcups_ui.pl"
     local vhost_file="$APACHE_CONF_D/apcups-monitor.conf"
-
-    cat > "$vhost_file" <<-EOVHOST
+    if [ "$EX_VHOST" -eq 1 ]; then
+        info "Apache vhost already exists: $vhost_file (keeping)"
+    else
+        cat > "$vhost_file" <<-EOVHOST
 # APC UPS Monitor — generated $(date)
 Alias /apcups "$DEST_DIR"
 <Directory "$DEST_DIR">
@@ -281,13 +367,14 @@ Alias /apcups "$DEST_DIR"
 </Directory>
 EOVHOST
 
-    # Debian: enable the conf
-    if [ "$PKGMGR" = "apt-get" ]; then
-        a2enconf apcups-monitor >/dev/null 2>&1 || true
-    fi
+        # Debian: enable the conf
+        if [ "$PKGMGR" = "apt-get" ]; then
+            a2enconf apcups-monitor >/dev/null 2>&1 || true
+        fi
 
-    systemctl reload "$APACHE_SVC" 2>/dev/null || systemctl restart "$APACHE_SVC" 2>/dev/null || true
-    info "Apache configured — UI at http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
+        systemctl reload "$APACHE_SVC" 2>/dev/null || systemctl restart "$APACHE_SVC" 2>/dev/null || true
+        info "Apache configured — UI at http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
+    fi
 }
 
 # ============================================================
@@ -295,6 +382,10 @@ EOVHOST
 # ============================================================
 setup_cron() {
     title "Setting up cron"
+    if [ "$EX_CRON" -eq 1 ]; then
+        info "Cron entry already exists: $CRON_FILE (keeping)"
+        return
+    fi
     # Convert STATTIME to cron interval
     local cron_line=""
     if [ "$A_STATTIME" -le 60 ]; then
@@ -457,8 +548,11 @@ fi
 check_deps
 verify_apcupsd
 setup_mysql
+prompt_config
+check_existing
 generate_config
 install_scripts
+setup_db
 setup_apache
 setup_cron
 print_summary
