@@ -187,16 +187,17 @@ setup_mysql() {
     [ -n "$MYSQL_ROOT_PASS" ] && mysql_cmd="$mysql_cmd -p$MYSQL_ROOT_PASS"
 
     info "Creating database and user..."
-    $mysql_cmd <<-EOSQL 2>/dev/null || {
-        err "Cannot connect to MySQL at $DB_HOST:$DB_PORT as $MYSQL_ROOT_USER"
-        err "Check credentials, firewall, and bind-address in my.cnf"
-        exit 1
-    }
+    $mysql_cmd <<-EOSQL 2>/dev/null
 CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
 GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
 FLUSH PRIVILEGES;
 EOSQL
+    if [ $? -ne 0 ]; then
+        err "Cannot connect to MySQL at $DB_HOST:$DB_PORT as $MYSQL_ROOT_USER"
+        err "Check credentials, firewall, and bind-address in my.cnf"
+        exit 1
+    fi
 
     info "Creating tables..."
     $mysql_cmd "$DB_NAME" < "$SCRIPT_DIR/apcups_ui.sql"
