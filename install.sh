@@ -21,8 +21,9 @@ info()  { echo -e "${GREEN}[*]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $*"; }
 err()   { echo -e "${RED}[X]${NC} $*"; }
 title() { echo -e "\n${BOLD}${CYAN}=== $* ===${NC}\n"; }
-ask()   { echo -en "${CYAN}[?]${NC} $1 [Y/n] "; read -r r; [[ "$r" =~ ^[Nn] ]] && return 1 || return 0; }
-get()   { echo -en "${CYAN}[?]${NC} $1: "; read -r r; echo "$r"; }
+ask()   { echo -en "${CYAN}[?]${NC} $1 [Y/n] " >&2; read -r r; [[ "$r" =~ ^[Nn] ]] && return 1 || return 0; }
+get()   { echo -en "${CYAN}[?]${NC} $1: " >&2; read -r r; echo "$r"; }
+get_silent() { echo -en "${CYAN}[?]${NC} $1: " >&2; read -r -s r; echo >&2; echo "$r"; }
 
 # ============================================================
 # OS detection + package manager abstraction
@@ -166,10 +167,27 @@ setup_mysql() {
         warn "No local MySQL/MariaDB service running"
         if ask "Install MariaDB server locally?"; then
             if [ "$PKGMGR" = "dnf" ]; then
-                dnf install -y mariadb-server
-                systemctl enable --now mariadb
+                info "Installing mariadb-server (may prompt for GPG key)..."
+                dnf install -y mariadb-server --nogpgcheck || {
+                    err "mariadb-server install failed"
+                    err "Try manually: dnf install mariadb-server"
+                    exit 1
+                }
+                info "Starting mariadb service..."
+                systemctl enable --now mariadb 2>/dev/null || {
+                    err "Failed to start mariadb"
+                    err "Try manually: systemctl enable --now mariadb"
+                    exit 1
+                }
+                # Wait for socket
+                for i in $(seq 1 10); do
+                    [ -S /var/lib/mysql/mysql.sock ] || [ -S /run/mariadb/mysql.sock ] && break
+                    sleep 1
+                done
             else
-                apt-get install -y mariadb-server
+                info "Installing mariadb-server..."
+                DEBIAN_FRONTEND=noninteractive apt-get install -y mariadb-server
+                systemctl enable --now mariadb 2>/dev/null || true
             fi
             info "MariaDB installed. Run mysql_secure_installation if needed."
         fi
@@ -181,7 +199,7 @@ setup_mysql() {
     DB_USER=$(get "DB user [apcups]"          || echo "apcups")
     DB_PASS=$(get "DB password [apcups]"       || echo "apcups")
     MYSQL_ROOT_USER=$(get "MySQL admin user [root]" || echo "root")
-    MYSQL_ROOT_PASS=$(get "MySQL admin password (empty if none)" || echo "")
+    MYSQL_ROOT_PASS=$(get_silent "MySQL admin password (empty if none)" || echo "")
 
     local mysql_cmd="mysql -h $DB_HOST -P $DB_PORT -u $MYSQL_ROOT_USER"
     [ -n "$MYSQL_ROOT_PASS" ] && mysql_cmd="$mysql_cmd -p$MYSQL_ROOT_PASS"
