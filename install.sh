@@ -408,9 +408,12 @@ setup_apache() {
 # APC UPS Monitor — generated $(date)
 Alias /apcups $DEST_DIR
 <Directory $DEST_DIR>
+    Require all granted
     Options +ExecCGI
     AddHandler cgi-script .pl
-    Require all granted
+    <Files "apcups_collector_mysql.pl">
+        Require all denied
+    </Files>
 </Directory>
 EOVHOST
 
