@@ -386,10 +386,25 @@ install_scripts() {
 setup_apache() {
     title "Setting up Apache CGI"
     local vhost_file="$APACHE_CONF_D/apcups-monitor.conf"
-    if [ "$EX_VHOST" -eq 1 ]; then
-        info "Apache vhost already exists: $vhost_file (keeping)"
-    else
-        cat > "$vhost_file" <<-EOVHOST
+    local vhost_broken=0
+    if [ -f "$vhost_file" ]; then
+        # проверяем что путь не пустой и совпадает с DEST_DIR
+        if grep -q 'Alias /apcups ""' "$vhost_file" 2>/dev/null || \
+           ! grep -q "Alias /apcups " "$vhost_file" 2>/dev/null; then
+            vhost_broken=1
+            warn "Apache vhost is broken — regenerating"
+        elif [ "$REINSTALL" -eq 1 ]; then
+            if ! ask "Apache vhost already exists — overwrite?"; then
+                info "Keeping existing vhost: $vhost_file"
+                return
+            fi
+        else
+            info "Apache vhost already exists: $vhost_file (keeping)"
+            return
+        fi
+    fi
+
+    cat > "$vhost_file" <<-EOVHOST
 # APC UPS Monitor — generated $(date)
 Alias /apcups "$DEST_DIR"
 <Directory "$DEST_DIR">
@@ -399,14 +414,13 @@ Alias /apcups "$DEST_DIR"
 </Directory>
 EOVHOST
 
-        # Debian: enable the conf
-        if [ "$PKGMGR" = "apt-get" ]; then
-            a2enconf apcups-monitor >/dev/null 2>&1 || true
-        fi
-
-        systemctl reload "$APACHE_SVC" 2>/dev/null || systemctl restart "$APACHE_SVC" 2>/dev/null || true
-        info "Apache configured — UI at http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
+    # Debian: enable the conf
+    if [ "$PKGMGR" = "apt-get" ]; then
+        a2enconf apcups-monitor >/dev/null 2>&1 || true
     fi
+
+    systemctl reload "$APACHE_SVC" 2>/dev/null || systemctl restart "$APACHE_SVC" 2>/dev/null || true
+    info "Apache configured — UI at http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
 }
 
 # ============================================================
