@@ -11,6 +11,9 @@ use POSIX qw(strftime);
 use DBI;
 
 # Загружаем внешний конфиг если есть
+our ($apcups_logfile, $apcups_statusfile, $apcups_shutdown_threshold, $apcups_shutdown_flag,
+     $apcups_db_host, $apcups_db_port, $apcups_db_name, $apcups_db_user, $apcups_db_pass,
+     $apcups_rsync_user, $apcups_rsync_host, $apcups_rsync_dir);
 do '/etc/apcups-monitor.conf' if -f '/etc/apcups-monitor.conf';
 
 # ---------- Настройки ----------

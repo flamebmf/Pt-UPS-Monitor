@@ -11,6 +11,7 @@ use DBI;
 use POSIX qw(strftime);
 
 # Загружаем внешний конфиг если есть
+our ($apcups_db_host, $apcups_db_port, $apcups_db_name, $apcups_db_user, $apcups_db_pass, $apcups_stattime);
 do '/etc/apcups-monitor.conf' if -f '/etc/apcups-monitor.conf';
 
 # ---------- Настройки ----------
@@ -27,6 +28,7 @@ my $dark     = '#04070d';
 my $card_bg  = '#0a0f16';
 my $text     = '#e4e8ee';
 my $muted    = '#7a8294';
+my $self     = (split '/', $0)[-1];
 # -----------------------------
 
 my @chart_palette = ($accent, $accent2, '#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff');
@@ -262,7 +264,7 @@ footer { text-align:center; padding:12px; font-size:.72rem; color:var(--muted); 
 <div class="navbar"><div class="nav-inner">
  <a class="nav-brand" href="#">PlurumTech UPS</a>
  <ul class="nav-links">
-  <li><a href="power_mysql.pl?timewindow='.$timewindow.'">Refresh</a></li>
+  <li><a href="'.$self.'?timewindow='.$timewindow.'">Refresh</a></li>
   <li><a href="https://plurumtech.ru">plurumtech.ru</a></li>
   <li><a href="#" id="toggleBg" onclick="toggleBgBars();return false" style="font-size:.7rem;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:3px 10px">BG ON</a></li>
  </ul>
@@ -284,14 +286,14 @@ footer { text-align:center; padding:12px; font-size:.72rem; color:var(--muted); 
  </div>
 
  <div class="time-select">
-  <a class="time-btn" href="power_mysql.pl?timewindow=1">1h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=2">2h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=6">6h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=12">12h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=24">24h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=48">48h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=72">72h</a>
-  <a class="time-btn" href="power_mysql.pl?timewindow=720">30d</a>
+  <a class="time-btn" href="'.$self.'?timewindow=1">1h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=2">2h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=6">6h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=12">12h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=24">24h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=48">48h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=72">72h</a>
+  <a class="time-btn" href="'.$self.'?timewindow=720">30d</a>
  </div>
 
  <div class="chart-grid">
