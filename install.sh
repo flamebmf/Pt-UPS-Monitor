@@ -373,10 +373,10 @@ install_scripts() {
             return
         fi
     fi
-    mkdir -p "$DEST_DIR" /var/log
+    mkdir -p "$DEST_DIR/cron" "$DEST_DIR/www" /var/log
     touch "$LOGFILE"
-    install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/"
-    install -m 755 "$SCRIPT_DIR/apcups_ui.pl"               "$DEST_DIR/"
+    install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/cron/"
+    install -m 755 "$SCRIPT_DIR/www/index.pl"                "$DEST_DIR/www/"
     info "Scripts installed to $DEST_DIR"
 }
 
@@ -406,14 +406,12 @@ setup_apache() {
 
     cat > "$vhost_file" <<-EOVHOST
 # APC UPS Monitor — generated $(date)
-Alias /apcups $DEST_DIR
-<Directory $DEST_DIR>
-    Require all granted
+Alias /apcups $DEST_DIR/www
+<Directory $DEST_DIR/www>
     Options +ExecCGI
     AddHandler cgi-script .pl
-    <Files "apcups_collector_mysql.pl">
-        Require all denied
-    </Files>
+    DirectoryIndex index.pl
+    Require all granted
 </Directory>
 EOVHOST
 
@@ -423,7 +421,7 @@ EOVHOST
     fi
 
     systemctl reload "$APACHE_SVC" 2>/dev/null || systemctl restart "$APACHE_SVC" 2>/dev/null || true
-    info "Apache configured — UI at http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
+    info "Apache configured — UI at http://$(hostname -I | awk '{print $1}')/apcups/"
 }
 
 # ============================================================
@@ -451,7 +449,7 @@ setup_cron() {
 
     cat > "$CRON_FILE" <<-EOCRON
 # APC UPS Monitor collector — STATTIME=$A_STATTIME s
-$cron_line root $DEST_DIR/apcups_collector_mysql.pl >> $LOGFILE 2>&1
+$cron_line root $DEST_DIR/cron/apcups_collector_mysql.pl >> $LOGFILE 2>&1
 EOCRON
     chmod 644 "$CRON_FILE"
     info "Cron installed: $CRON_FILE  (interval ~$A_STATTIME s)"
@@ -567,9 +565,79 @@ print_summary() {
 
     echo -e "  ${BOLD}──────────────────────────────────────────────${NC}"
     echo
-    echo -e "  ${CYAN}URL:${NC}  http://$(hostname -I | awk '{print $1}')/apcups/apcups_ui.pl"
+    echo -e "  ${CYAN}URL:${NC}  http://$(hostname -I | awk '{print $1}')/apcups/"
     echo -e "  ${CYAN}Log:${NC}  tail -f $LOGFILE"
     echo
+}
+
+# ============================================================
+# Uninstall
+# ============================================================
+do_uninstall() {
+    title "APC UPS Monitor — Uninstall"
+
+    # попробуем прочитать конфиг для DEST_DIR, иначе дефолт
+    local u_dest="/usr/local/lib/apcups-monitor"
+    local u_log="/var/log/apcups-collector.log"
+    if [ -f "$CONF_FILE" ]; then
+        local u_log=$(awk -F"'" '/apcups_logfile/ {print $2; exit}' "$CONF_FILE" 2>/dev/null || echo "$u_log")
+    fi
+
+    echo -e "  ${YELLOW}Will remove:${NC}"
+    echo -e "    $CONF_FILE"
+    echo -e "    $CRON_FILE"
+    echo -e "    $APACHE_CONF_D/apcups-monitor.conf"
+    echo -e "    $u_dest"
+    echo -e "    $u_log"
+    echo -e "    /var/run/apcups-collector.lock"
+    echo -e "    /var/run/apcups-shutdown.flag"
+    echo
+
+    if ! ask "Proceed with uninstall?"; then
+        info "Aborted"
+        exit 0
+    fi
+
+    # Cron
+    if [ -f "$CRON_FILE" ]; then
+        rm -f "$CRON_FILE"
+        info "Removed: $CRON_FILE"
+        systemctl restart crond 2>/dev/null || true
+    fi
+
+    # Apache vhost
+    if [ -f "$APACHE_CONF_D/apcups-monitor.conf" ]; then
+        rm -f "$APACHE_CONF_D/apcups-monitor.conf"
+        info "Removed: $APACHE_CONF_D/apcups-monitor.conf"
+        if [ "$PKGMGR" = "apt-get" ]; then
+            a2disconf apcups-monitor 2>/dev/null || true
+        fi
+        systemctl reload "$APACHE_SVC" 2>/dev/null || systemctl restart "$APACHE_SVC" 2>/dev/null || true
+    fi
+
+    # Config
+    [ -f "$CONF_FILE" ] && { rm -f "$CONF_FILE"; info "Removed: $CONF_FILE"; }
+
+    # Scripts
+    [ -d "$u_dest" ] && { rm -rf "$u_dest"; info "Removed: $u_dest"; }
+
+    # Log & runtime files
+    [ -f "$u_log" ] && { rm -f "$u_log"; info "Removed: $u_log"; }
+    [ -f /var/run/apcups-collector.lock ] && { rm -f /var/run/apcups-collector.lock; info "Removed: lock file"; }
+    [ -f /var/run/apcups-shutdown.flag ] && { rm -f /var/run/apcups-shutdown.flag; info "Removed: shutdown flag"; }
+
+    # Database (optional)
+    echo
+    if ask "Drop database '${DB_NAME:-apcups_monitor}'?"; then
+        local mc="mysql -h ${DB_HOST:-localhost} -P ${DB_PORT:-3306} -u ${DB_USER:-apcups}"
+        [ -n "${DB_PASS:-}" ] && mc="$mc -p$DB_PASS"
+        echo "DROP DATABASE IF EXISTS \`${DB_NAME:-apcups_monitor}\`;" | $mc 2>/dev/null && \
+            info "Dropped database: ${DB_NAME:-apcups_monitor}" || \
+            warn "Could not drop database (connect as root manually)"
+    fi
+
+    echo
+    echo -e "${GREEN}[*]${NC} Uninstall complete"
 }
 
 # ============================================================
@@ -580,6 +648,13 @@ echo -e "${BOLD}${CYAN}APC UPS Monitor Installer v$VERSION${NC}\n"
 if [ "$(id -u)" -ne 0 ]; then
     err "This script must be run as root"
     exit 1
+fi
+
+# Uninstall mode
+if [ "${1:-}" = "--uninstall" ] || [ "${1:-}" = "-u" ]; then
+    detect_os
+    do_uninstall
+    exit 0
 fi
 
 detect_os
