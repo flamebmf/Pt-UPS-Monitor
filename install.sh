@@ -21,9 +21,9 @@ info()  { echo -e "${GREEN}[*]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[!]${NC} $*"; }
 err()   { echo -e "${RED}[X]${NC} $*"; }
 title() { echo -e "\n${BOLD}${CYAN}=== $* ===${NC}\n"; }
-ask()   { echo -en "${CYAN}[?]${NC} $1 [Y/n] " >&2; read -r r; [[ "$r" =~ ^[Nn] ]] && return 1 || return 0; }
-get()   { echo -en "${CYAN}[?]${NC} $1: " >&2; read -r r; echo "$r"; }
-get_silent() { echo -en "${CYAN}[?]${NC} $1: " >&2; read -r -s r; echo >&2; echo "$r"; }
+ask()   { echo -en "${CYAN}[?]${NC} $1 [Y/n] " >&2; read -r r; [[ "${r:-Y}" =~ ^[Nn] ]] && return 1 || return 0; }
+get()   { echo -en "${CYAN}[?]${NC} $1: " >&2; read -r r; echo "$r"; [ -n "$r" ]; }
+get_silent() { echo -en "${CYAN}[?]${NC} $1: " >&2; read -r -s r; echo >&2; echo "$r"; [ -n "$r" ]; }
 
 # ============================================================
 # OS detection + package manager abstraction
@@ -220,6 +220,10 @@ setup_mysql() {
             fi
             info "MariaDB installed. Run mysql_secure_installation if needed."
         fi
+    else
+        for s in mysql mariadb mysqld; do
+            systemctl is-active --quiet "$s" 2>/dev/null && { info "Service $s is active"; break; }
+        done
     fi
 }
 
