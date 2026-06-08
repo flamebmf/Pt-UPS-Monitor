@@ -88,35 +88,6 @@ read_apcupsd_conf() {
 }
 
 # ============================================================
-# Existing installation detection
-# ============================================================
-EX_CONF=0; EX_SCRIPTS=0; EX_VHOST=0; EX_CRON=0; EX_DB=0
-check_existing() {
-    title "Checking existing installation"
-    local any=0
-    [ -f "$CONF_FILE" ]    && { warn "Config exists:    $CONF_FILE";    EX_CONF=1;    any=1; }
-    [ -d "$DEST_DIR" ]     && { warn "Scripts in:       $DEST_DIR";    EX_SCRIPTS=1; any=1; }
-    [ -f "$APACHE_CONF_D/apcups-monitor.conf" ] && { warn "Apache vhost:    $APACHE_CONF_D/apcups-monitor.conf"; EX_VHOST=1; any=1; }
-    [ -f "$CRON_FILE" ]    && { warn "Cron:             $CRON_FILE";   EX_CRON=1;    any=1; }
-    # check DB tables
-    local mc="mysql -h $DB_HOST -P $DB_PORT -u $DB_USER"
-    [ -n "$DB_PASS" ] && mc="$mc -p$DB_PASS"
-    echo "SELECT 1 FROM ups_data LIMIT 1;" | $mc "$DB_NAME" >/dev/null 2>&1 && { warn "DB tables exist:  $DB_NAME.ups_data"; EX_DB=1; any=1; }
-
-    if [ "$any" -eq 1 ]; then
-        echo
-        if ! ask "Installation detected — reinstall existing components?"; then
-            info "Skipping installation, showing status only"
-            print_summary
-            exit 0
-        fi
-        echo
-    else
-        info "No previous installation found"
-    fi
-}
-
-# ============================================================
 # Check / install packages
 # ============================================================
 check_deps() {
@@ -376,7 +347,7 @@ install_scripts() {
     mkdir -p "$DEST_DIR/cron" "$DEST_DIR/www" /var/log
     touch "$LOGFILE"
     install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/cron/"
-    install -m 755 "$SCRIPT_DIR/www/index.pl"                "$DEST_DIR/www/"
+    install -m 755 "$SCRIPT_DIR/apcups_ui.pl"                "$DEST_DIR/www/index.pl"
     info "Scripts installed to $DEST_DIR"
 }
 
@@ -503,15 +474,15 @@ print_summary() {
     fi
 
     # Collector script
-    if [ -f "$DEST_DIR/apcups_collector_mysql.pl" ]; then
+    if [ -f "$DEST_DIR/cron/apcups_collector_mysql.pl" ]; then
         printf "  %-22s %-8s %s\n" "Collector" "$ok" "$DEST_DIR"
     else
         printf "  %-22s %-8s %s\n" "Collector" "$fail" "missing"
     fi
 
     # Web UI
-    if [ -f "$DEST_DIR/apcups_ui.pl" ]; then
-        printf "  %-22s %-8s %s\n" "Web UI" "$ok" "$DEST_DIR"
+    if [ -f "$DEST_DIR/www/index.pl" ]; then
+        printf "  %-22s %-8s %s\n" "Web UI" "$ok" "$DEST_DIR/www"
     else
         printf "  %-22s %-8s %s\n" "Web UI" "$fail" "missing"
     fi
