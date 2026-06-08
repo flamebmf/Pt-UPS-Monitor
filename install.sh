@@ -406,8 +406,8 @@ setup_apache() {
 
     cat > "$vhost_file" <<-EOVHOST
 # APC UPS Monitor — generated $(date)
-Alias /apcups "$DEST_DIR"
-<Directory "$DEST_DIR">
+Alias /apcups $DEST_DIR
+<Directory $DEST_DIR>
     Options +ExecCGI
     AddHandler cgi-script .pl
     Require all granted
