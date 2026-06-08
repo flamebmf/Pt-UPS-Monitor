@@ -245,6 +245,7 @@ prompt_config() {
 # Existing installation detection
 # ============================================================
 EX_CONF=0; EX_SCRIPTS=0; EX_VHOST=0; EX_CRON=0; EX_DB=0
+REINSTALL=0
 check_existing() {
     title "Checking existing installation"
     local any=0
@@ -258,12 +259,11 @@ check_existing() {
 
     if [ "$any" -eq 1 ]; then
         echo
-        if ! ask "Installation detected — reinstall existing components?"; then
-            info "Skipping installation, showing status only"
-            print_summary
-            exit 0
+        if ask "Reinstall existing components? (No = keep existing, install missing only)"; then
+            REINSTALL=1
+        else
+            info "Keeping existing components, will install missing ones only"
         fi
-        echo
     else
         info "No previous installation found"
     fi
@@ -278,24 +278,30 @@ setup_db() {
         info "DB tables already exist: $DB_NAME.ups_data (keeping)"
         return
     fi
-    local mysql_cmd="mysql -h $DB_HOST -P $DB_PORT -u $MYSQL_ROOT_USER"
+    # пробуем сокет, затем TCP
+    local mysql_cmd="mysql -h $DB_HOST -P $DB_PORT -u $MYSQL_ROOT_USER --connect-timeout=3"
+    for s in /var/lib/mysql/mysql.sock /run/mariadb/mysql.sock /run/mysqld/mysqld.sock; do
+        [ -S "$s" ] && { mysql_cmd="mysql -S $s -u $MYSQL_ROOT_USER --connect-timeout=3"; break; }
+    done
     [ -n "$MYSQL_ROOT_PASS" ] && mysql_cmd="$mysql_cmd -p$MYSQL_ROOT_PASS"
 
     info "Creating database and user..."
-    $mysql_cmd <<-EOSQL 2>/dev/null
+    if ! $mysql_cmd <<-EOSQL; then
 CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
 GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
 FLUSH PRIVILEGES;
 EOSQL
-    if [ $? -ne 0 ]; then
-        err "Cannot connect to MySQL at $DB_HOST:$DB_PORT as $MYSQL_ROOT_USER"
-        err "Check credentials, firewall, and bind-address in my.cnf"
+        err "MySQL connect failed — is mariadb-server installed?"
+        err "Try: dnf install -y mariadb-server && systemctl enable --now mariadb"
         exit 1
     fi
 
     info "Creating tables..."
-    $mysql_cmd "$DB_NAME" < "$SCRIPT_DIR/apcups_ui.sql"
+    $mysql_cmd "$DB_NAME" < "$SCRIPT_DIR/apcups_ui.sql" 2>&1 || {
+        err "Failed to create tables"
+        exit 1
+    }
     info "Database ready: $DB_NAME@$DB_HOST:$DB_PORT (user: $DB_USER)"
 }
 
@@ -305,8 +311,11 @@ EOSQL
 generate_config() {
     title "Generating $CONF_FILE"
     if [ "$EX_CONF" -eq 1 ]; then
-        if ! ask "Config already exists — overwrite?"; then
+        if [ "$REINSTALL" -eq 1 ] && ! ask "Config already exists — overwrite?"; then
             info "Keeping existing config: $CONF_FILE"
+            return
+        elif [ "$REINSTALL" -eq 0 ]; then
+            info "Config already exists: $CONF_FILE (keeping)"
             return
         fi
     fi
@@ -334,15 +343,20 @@ EOCONF
 # ============================================================
 install_scripts() {
     title "Installing scripts"
-    if [ "$EX_SCRIPTS" -eq 1 ] && ! ask "Scripts already in $DEST_DIR — re-copy?"; then
-        info "Keeping existing scripts"
-    else
-        mkdir -p "$DEST_DIR" /var/log
-        touch "$LOGFILE"
-        install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/"
-        install -m 755 "$SCRIPT_DIR/apcups_ui.pl"               "$DEST_DIR/"
-        info "Scripts installed to $DEST_DIR"
+    if [ "$EX_SCRIPTS" -eq 1 ]; then
+        if [ "$REINSTALL" -eq 1 ] && ! ask "Scripts already in $DEST_DIR — re-copy?"; then
+            info "Keeping existing scripts"
+            return
+        elif [ "$REINSTALL" -eq 0 ]; then
+            info "Scripts already in $DEST_DIR (keeping)"
+            return
+        fi
     fi
+    mkdir -p "$DEST_DIR" /var/log
+    touch "$LOGFILE"
+    install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/"
+    install -m 755 "$SCRIPT_DIR/apcups_ui.pl"               "$DEST_DIR/"
+    info "Scripts installed to $DEST_DIR"
 }
 
 # ============================================================
