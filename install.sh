@@ -282,30 +282,47 @@ setup_db() {
         info "DB tables already exist: $DB_NAME.ups_data (keeping)"
         return
     fi
-    # пробуем сокет, затем TCP
-    local mysql_cmd="mysql -h $DB_HOST -P $DB_PORT -u $MYSQL_ROOT_USER --connect-timeout=3"
-    for s in /var/lib/mysql/mysql.sock /run/mariadb/mysql.sock /run/mysqld/mysqld.sock; do
-        [ -S "$s" ] && { mysql_cmd="mysql -S $s -u $MYSQL_ROOT_USER --connect-timeout=3"; break; }
-    done
-    [ -n "$MYSQL_ROOT_PASS" ] && mysql_cmd="$mysql_cmd -p$MYSQL_ROOT_PASS"
 
-    info "Creating database and user..."
-    if ! $mysql_cmd <<-EOSQL; then
-CREATE DATABASE IF NOT EXISTS $DB_NAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
-GRANT ALL PRIVILEGES ON $DB_NAME.* TO '$DB_USER'@'%';
-FLUSH PRIVILEGES;
-EOSQL
-        err "MySQL connect failed — is mariadb-server installed?"
-        err "Try: dnf install -y mariadb-server && systemctl enable --now mariadb"
+    # какой mysql используем
+    if ! command -v mysql >/dev/null 2>&1; then
+        err "mysql client not found — install mariadb package"
         exit 1
     fi
 
-    info "Creating tables..."
-    $mysql_cmd "$DB_NAME" < "$SCRIPT_DIR/apcups_ui.sql" 2>&1 || {
-        err "Failed to create tables"
+    # пробуем сокет, затем TCP
+    local mysql_cmd="mysql -h $DB_HOST -P $DB_PORT -u $MYSQL_ROOT_USER --connect-timeout=3"
+    for s in /var/lib/mysql/mysql.sock /run/mariadb/mysql.sock /run/mysqld/mysqld.sock; do
+        if [ -S "$s" ]; then
+            mysql_cmd="mysql -S $s -u $MYSQL_ROOT_USER --connect-timeout=3"
+            info "Using socket: $s"
+            break
+        fi
+    done
+    [ -n "$MYSQL_ROOT_PASS" ] && mysql_cmd="$mysql_cmd -p$MYSQL_ROOT_PASS"
+
+    # Шаг 1: создать БД
+    info "Creating database '$DB_NAME'..."
+    if ! echo "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" | $mysql_cmd; then
+        err "Failed to create database — see error above"
         exit 1
-    }
+    fi
+
+    # Шаг 2: создать пользователя + права
+    info "Creating user '$DB_USER' and granting privileges..."
+    $mysql_cmd <<-EOSQL
+CREATE USER IF NOT EXISTS '$DB_USER'@'%' IDENTIFIED BY '$DB_PASS';
+GRANT ALL PRIVILEGES ON \`$DB_NAME\`.* TO '$DB_USER'@'%';
+FLUSH PRIVILEGES;
+EOSQL
+
+    # Шаг 3: создать таблицы
+    info "Creating tables..."
+    if ! $mysql_cmd "$DB_NAME" < "$SCRIPT_DIR/apcups_ui.sql"; then
+        err "Failed to create tables"
+        err "Check: $SCRIPT_DIR/apcups_ui.sql exists and is valid SQL"
+        exit 1
+    fi
+
     info "Database ready: $DB_NAME@$DB_HOST:$DB_PORT (user: $DB_USER)"
 }
 
