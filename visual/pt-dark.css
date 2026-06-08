@@ -1,0 +1,146 @@
+/* ============================================================
+ * PlurumTech Dark Theme — (C) 2024-2025 PlurumTech.com
+ * Licensed under GNU GPL v3
+ * ============================================================
+ * Reusable dark dashboard theme.
+ * Override :root variables to customise.
+ * ============================================================ */
+:root {
+  --pt-bg:     #04070d;
+  --pt-card:   #0a0f16;
+  --pt-accent: #00d4ff;
+  --pt-accent2:#7b61ff;
+  --pt-text:   #e4e8ee;
+  --pt-muted:  #7a8294;
+}
+
+/* ---------- Reset & base ---------- */
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box }
+body {
+  font-family:"Roboto",sans-serif; background:var(--pt-bg); color:var(--pt-text);
+  min-height:100vh; overflow-x:hidden;
+}
+body::before {
+  content:""; position:fixed; inset:0;
+  background:radial-gradient(ellipse at 20% 20%, var(--pt-accent-rgba, rgba(0,212,255,.03)) 0%, transparent 60%),
+             radial-gradient(ellipse at 80% 60%, var(--pt-accent2-rgba, rgba(123,97,255,.03)) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+
+/* ---------- Glass card ---------- */
+.glass {
+  background:rgba(10,15,22,.9); border:1px solid rgba(255,255,255,.06);
+  backdrop-filter:blur(10px); border-radius:16px; position:relative; z-index:1;
+}
+
+/* ---------- Navbar ---------- */
+.navbar {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:rgba(4,7,13,.85); backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,.04); padding:12px 0;
+}
+.nav-inner {
+  max-width:1320px; margin:0 auto; padding:0 24px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.nav-brand {
+  font-size:1.2rem; font-weight:900; letter-spacing:-0.5px;
+  background:linear-gradient(135deg, var(--pt-accent), var(--pt-accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  text-decoration:none;
+}
+.nav-links { display:flex; gap:24px; list-style:none }
+.nav-links a {
+  color:var(--pt-muted); text-decoration:none; font-size:.78rem;
+  font-weight:700; text-transform:uppercase; letter-spacing:1px; transition:color .2s;
+}
+.nav-links a:hover { color:var(--pt-accent) }
+
+/* ---------- Container ---------- */
+.container { max-width:1320px; margin:0 auto; padding:80px 24px 20px; position:relative; z-index:1 }
+
+/* ---------- Header ---------- */
+.header-block { text-align:center; margin-bottom:16px }
+.header-block h1 { font-size:1.6rem; font-weight:900; letter-spacing:-1px; margin-bottom:6px }
+.grad-text {
+  background:linear-gradient(135deg,var(--pt-accent),var(--pt-accent2));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+}
+.header-stats { display:flex; justify-content:center; gap:32px; margin-top:12px; flex-wrap:wrap }
+.stat-badge {
+  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
+  border-radius:8px; padding:6px 12px; font-size:.78rem;
+}
+.stat-val { font-weight:700; color:var(--pt-accent) }
+
+/* ---------- Charts ---------- */
+.chart-grid { display:flex; flex-direction:column; gap:14px }
+.chart-row { display:flex; gap:14px }
+.chart-card {
+  background:rgba(10,15,22,.9); border:1px solid rgba(255,255,255,.06);
+  backdrop-filter:blur(10px); border-radius:16px; padding:14px; min-height:0;
+}
+.chart-card.full { width:100% }
+.chart-card.half  { flex:1; min-width:0 }
+
+/* ---------- Battery bar ---------- */
+.battery-bar {
+  display:flex; align-items:center; gap:16px; padding:12px 20px;
+  background:rgba(10,15,22,.9); border:1px solid rgba(255,255,255,.06);
+  backdrop-filter:blur(10px); border-radius:12px;
+}
+.battery-bar-label { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--pt-muted); white-space:nowrap }
+.battery-bar-track {
+  flex:1; height:18px; background:rgba(255,255,255,.06); border-radius:9px; overflow:hidden;
+}
+.battery-bar-fill {
+  height:100%; border-radius:9px; transition:width .5s ease;
+  background:linear-gradient(90deg,var(--pt-accent),var(--pt-accent2));
+}
+.battery-bar-val { font-size:1.1rem; font-weight:900; min-width:48px; text-align:right }
+
+/* ---------- Time-select buttons ---------- */
+.time-select {
+  display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:16px;
+}
+.time-btn {
+  background:rgba(255,255,255,.04); color:var(--pt-muted); border:1px solid rgba(255,255,255,.08);
+  padding:6px 14px; border-radius:8px; font-size:.75rem; font-weight:700;
+  text-decoration:none; text-transform:uppercase; letter-spacing:.5px; transition:all .2s;
+}
+.time-btn:hover, .time-btn.active {
+  color:var(--pt-accent); border-color:var(--pt-accent);
+  background:rgba(0,212,255,.08);
+}
+
+/* ---------- Footer ---------- */
+footer { text-align:center; padding:12px; font-size:.72rem; color:var(--pt-muted); position:relative; z-index:1 }
+
+/* ---------- Background bars ---------- */
+.bg-bars { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden }
+.bg-bar {
+  position:absolute; border-radius:999px; will-change:transform,opacity; opacity:1;
+  transition:opacity 3s ease;
+  background:linear-gradient(180deg,
+    transparent 0%, transparent 10%,
+    rgba(0,212,255,.06) 25%, rgba(0,212,255,.25) 50%, rgba(0,212,255,.06) 75%,
+    transparent 90%, transparent 100%);
+  box-shadow:0 0 12px rgba(0,212,255,.12);
+}
+.bg-bar.dim { opacity:.12 }
+.bg-bar.purple {
+  background:linear-gradient(180deg,
+    transparent 0%, transparent 10%,
+    rgba(123,97,255,.05) 25%, rgba(123,97,255,.2) 50%, rgba(123,97,255,.05) 75%,
+    transparent 90%, transparent 100%);
+  box-shadow:0 0 12px rgba(123,97,255,.12);
+}
+#bgBars.off { display:none }
+
+/* ---------- Toggle button ---------- */
+.pt-bg-btn {
+  font-size:.7rem; border:1px solid rgba(255,255,255,.12);
+  border-radius:6px; padding:3px 10px; cursor:pointer;
+  background:transparent; color:var(--pt-muted);
+  font-family:inherit; font-weight:700; text-transform:uppercase;
+}

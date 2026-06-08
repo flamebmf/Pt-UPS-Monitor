@@ -154,110 +154,8 @@ print '<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="pt-dark.css">
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<style>
-:root {
-  --bg: '.$dark.'; --card: '.$card_bg.'; --accent: '.$accent.';
-  --accent2: '.$accent2.'; --text: '.$text.'; --muted: '.$muted.';
-}
-* { margin:0; padding:0; box-sizing:border-box }
-body {
-  font-family: "Roboto",sans-serif; background:var(--bg); color:var(--text);
-  min-height:100vh; overflow-x:hidden;
-}
-body::before {
-  content:""; position:fixed; inset:0;
-  background:radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.03) 0%, transparent 60%),
-             radial-gradient(ellipse at 80% 60%, rgba(123,97,255,0.03) 0%, transparent 60%);
-  pointer-events:none; z-index:0;
-}
-.glass {
-  background:rgba(10,15,22,.9); border:1px solid rgba(255,255,255,.06);
-  backdrop-filter:blur(10px); border-radius:16px; position:relative; z-index:1;
-}
-.navbar {
-  position:fixed; top:0; left:0; right:0; z-index:100;
-  background:rgba(4,7,13,.85); backdrop-filter:blur(20px);
-  border-bottom:1px solid rgba(255,255,255,.04); padding:12px 0;
-}
-.nav-inner {
-  max-width:1320px; margin:0 auto; padding:0 24px;
-  display:flex; align-items:center; justify-content:space-between;
-}
-.nav-brand {
-  font-size:1.2rem; font-weight:900; letter-spacing:-0.5px;
-  background:linear-gradient(135deg, var(--accent), var(--accent2));
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  text-decoration:none;
-}
-.nav-links { display:flex; gap:24px; list-style:none }
-.nav-links a {
-  color:var(--muted); text-decoration:none; font-size:.78rem;
-  font-weight:700; text-transform:uppercase; letter-spacing:1px; transition:color .2s;
-}
-.nav-links a:hover { color:var(--accent) }
-.container { max-width:1320px; margin:0 auto; padding:80px 24px 20px; position:relative; z-index:1 }
-.header-block { text-align:center; margin-bottom:16px }
-.header-block h1 { font-size:1.6rem; font-weight:900; letter-spacing:-1px; margin-bottom:6px }
-.grad-text { background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent }
-.header-stats { display:flex; justify-content:center; gap:32px; margin-top:12px; flex-wrap:wrap }
-.stat-badge {
-  background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08);
-  border-radius:8px; padding:6px 12px; font-size:.78rem;
-}
-.stat-val { font-weight:700; color:var(--accent) }
-.chart-grid { display:flex; flex-direction:column; gap:14px }
-.chart-row { display:flex; gap:14px }
-.chart-card {
-  background:rgba(10,15,22,.9); border:1px solid rgba(255,255,255,.06);
-  backdrop-filter:blur(10px); border-radius:16px; padding:14px; min-height:0;
-}
-.chart-card.full { width:100% }
-.chart-card.half  { flex:1; min-width:0 }
-.battery-bar {
-  display:flex; align-items:center; gap:16px; padding:12px 20px;
-  background:rgba(10,15,22,.9); border:1px solid rgba(255,255,255,.06);
-  backdrop-filter:blur(10px); border-radius:12px;
-}
-.battery-bar-label { font-size:.78rem; font-weight:700; text-transform:uppercase; letter-spacing:2px; color:var(--muted); white-space:nowrap }
-.battery-bar-track {
-  flex:1; height:18px; background:rgba(255,255,255,.06); border-radius:9px; overflow:hidden;
-}
-.battery-bar-fill {
-  height:100%; border-radius:9px; transition:width .5s ease;
-  background:linear-gradient(90deg,'.$accent.','.$accent2.');
-}
-.battery-bar-val { font-size:1.1rem; font-weight:900; min-width:48px; text-align:right }
-.time-select {
-  display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-bottom:16px;
-}
-.time-btn {
-  background:rgba(255,255,255,.04); color:var(--muted); border:1px solid rgba(255,255,255,.08);
-  padding:6px 14px; border-radius:8px; font-size:.75rem; font-weight:700;
-  text-decoration:none; text-transform:uppercase; letter-spacing:.5px; transition:all .2s;
-}
-.time-btn:hover, .time-btn.active { color:var(--accent); border-color:var(--accent); background:rgba(0,212,255,.08) }
-footer { text-align:center; padding:12px; font-size:.72rem; color:var(--muted); position:relative; z-index:1 }
-.bg-bars { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden }
-.bg-bar {
-  position:absolute; border-radius:999px; will-change:transform,opacity; opacity:1;
-  transition:opacity 3s ease;
-  background:linear-gradient(180deg,
-    transparent 0%, transparent 10%,
-    rgba(0,212,255,.06) 25%, rgba(0,212,255,.25) 50%, rgba(0,212,255,.06) 75%,
-    transparent 90%, transparent 100%);
-  box-shadow:0 0 12px rgba(0,212,255,.12);
-}
-.bg-bar.dim { opacity:.12 }
-.bg-bar.purple {
-  background:linear-gradient(180deg,
-    transparent 0%, transparent 10%,
-    rgba(123,97,255,.05) 25%, rgba(123,97,255,.2) 50%, rgba(123,97,255,.05) 75%,
-    transparent 90%, transparent 100%);
-  box-shadow:0 0 12px rgba(123,97,255,.12);
-}
-#bgBars.off { display:none }
-</style>
 </head>
 <body>
 <div class="bg-bars" id="bgBars"></div>
@@ -266,7 +164,7 @@ footer { text-align:center; padding:12px; font-size:.72rem; color:var(--muted); 
  <ul class="nav-links">
   <li><a href="'.$self.'?timewindow='.$timewindow.'">Refresh</a></li>
   <li><a href="https://plurumtech.ru">plurumtech.ru</a></li>
-  <li><a href="#" id="toggleBg" onclick="toggleBgBars();return false" style="font-size:.7rem;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:3px 10px">BG ON</a></li>
+   <li><a href="#" id="toggleBg" onclick="toggleBgBars();return false" class="pt-bg-btn">BG ON</a></li>
  </ul>
 </div></div>
 
@@ -383,75 +281,16 @@ new ApexCharts(document.querySelector("#volts"), opts_v).render();
 new ApexCharts(document.querySelector("#charge"), opts_c).render();
 new ApexCharts(document.querySelector("#load"), opts_l).render();
 
-// Подсветка активной кнопки
 var tw='.$timewindow.';
 document.querySelectorAll(".time-btn").forEach(function(b){
   if(b.href.endsWith("timewindow="+tw)) b.classList.add("active");
 });
 
-// Анимация батареи
 var b = document.getElementById("batteryFill");
 b.style.transition = "none";
 b.style.width = "0%";
 setTimeout(function(){ b.style.transition = "width .8s ease"; b.style.width="'.$charge_cur.'%" }, 100);
-
-// Background bars — PlurumTech original
-(function(){
-  var c=document.getElementById("bgBars"); if(!c)return;
-  var NUM=35, winH, winW, barH, marginV, startTime=Date.now(), barData=[];
-  function recalc(){ winH=window.innerHeight; winW=window.innerWidth; barH=winH*5; marginV=winH*2 }
-  recalc();
-  for(var i=0;i<NUM;i++){
-    var bar=document.createElement("div"); bar.className="bg-bar";
-    if(i%4===0) bar.classList.add("purple");
-    var w=14+Math.random()*80;
-    var baseLeftPct=(i/NUM)*100+(Math.random()-.5)*6;
-    bar.style.width=w+"px"; bar.style.height=barH+"px";
-    bar.style.top="-"+marginV+"px"; bar.style.left=baseLeftPct+"%";
-    var startDimmed=Math.random()>.55;
-    if(startDimmed) bar.classList.add("dim");
-    c.appendChild(bar);
-    barData.push({el:bar,width:w,speedY:.2+Math.random()*2.2,speedX:.5+Math.random()*1,
-      basePosY:(Math.random()-.5)*winH*1.2,baseLeftPct:baseLeftPct,nextFade:8+Math.random()*12,
-      dimmed:startDimmed,dimStart:startDimmed?startTime-1e3-Math.random()*3e3:0});
-  }
-  function drift(){
-    var now=Date.now(), elapsed=(now-startTime)/1e3, scrollY=window.pageYOffset;
-    barData.forEach(function(d){
-      var y=d.basePosY-scrollY*d.speedY*.6, wrapRange=barH;
-      while(y<-marginV) y+=wrapRange; while(y>marginV+barH) y-=wrapRange;
-      var driftPx=(elapsed*d.speedX*winW)/120;
-      driftPx=driftPx%(winW+d.width+100);
-      var barL=(d.baseLeftPct/100)*winW, xShift=-driftPx;
-      var mappedX=((barL+xShift)%(winW+d.width+100));
-      if(mappedX<-d.width-50) mappedX+=winW+d.width+100;
-      d.el.style.transform="translateY("+y+"px) translateX("+(mappedX-barL)+"px)";
-      d.nextFade-=.016;
-      if(!d.dimmed&&d.nextFade<=0){ d.dimmed=true; d.dimStart=now; d.el.classList.add("dim") }
-      if(d.dimmed&&(now-d.dimStart)>3e3){ d.dimmed=false; d.el.classList.remove("dim"); d.nextFade=8+Math.random()*20 }
-    });
-    requestAnimationFrame(drift);
-  }
-  drift();
-  window.addEventListener("resize",recalc);
-})();
-
-(function initBg(){
-  var bg=document.getElementById("bgBars"), btn=document.getElementById("toggleBg");
-  if(localStorage.getItem("ptBgOff")==="1"){
-    bg.classList.add("off"); btn.textContent="BG OFF"; btn.style.opacity=".6";
-  }
-})();
-function toggleBgBars(){
-  var bg=document.getElementById("bgBars"), btn=document.getElementById("toggleBg");
-  if(bg.classList.contains("off")){
-    bg.classList.remove("off"); btn.textContent="BG ON"; btn.style.opacity="1";
-    localStorage.setItem("ptBgOff","0");
-  }else{
-    bg.classList.add("off"); btn.textContent="BG OFF"; btn.style.opacity=".6";
-    localStorage.setItem("ptBgOff","1");
-  }
-}
 </script>
+<script src="bg-bars.js"></script>
 </body>
 </html>';

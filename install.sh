@@ -348,6 +348,8 @@ install_scripts() {
     touch "$LOGFILE"
     install -m 755 "$SCRIPT_DIR/apcups_collector_mysql.pl"  "$DEST_DIR/cron/"
     install -m 755 "$SCRIPT_DIR/apcups_ui.pl"                "$DEST_DIR/www/index.pl"
+    install -m 644 "$SCRIPT_DIR/visual/pt-dark.css"          "$DEST_DIR/www/"
+    install -m 644 "$SCRIPT_DIR/visual/bg-bars.js"           "$DEST_DIR/www/"
     info "Scripts installed to $DEST_DIR"
 }
 

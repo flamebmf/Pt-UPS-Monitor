@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#04070d">
+<title>PlurumTech Template</title>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+<!-- PlurumTech Dark Theme -->
+<link rel="stylesheet" href="pt-dark.css">
+</head>
+<body>
+
+<!-- Background bars -->
+<div class="bg-bars" id="bgBars"></div>
+
+<!-- Navbar -->
+<div class="navbar"><div class="nav-inner">
+  <a class="nav-brand" href="#">Your Project</a>
+  <ul class="nav-links">
+    <li><a href="#">Dashboard</a></li>
+    <li><a href="#">Docs</a></li>
+    <li>
+      <button id="toggleBg" class="pt-bg-btn" onclick="toggleBgBars()">BG ON</button>
+    </li>
+  </ul>
+</div></div>
+
+<!-- Main content -->
+<div class="container">
+
+  <div class="header-block">
+    <h1>Welcome to <span class="grad-text">PlurumTech</span></h1>
+    <div class="header-stats">
+      <div class="stat-badge">Metric <span class="stat-val">42</span></div>
+      <div class="stat-badge">Status <span class="stat-val">Online</span></div>
+    </div>
+  </div>
+
+  <!-- Battery bar example -->
+  <div class="battery-bar">
+    <span class="battery-bar-label">Progress</span>
+    <div class="battery-bar-track">
+      <div class="battery-bar-fill" style="width:72%"></div>
+    </div>
+    <span class="battery-bar-val grad-text">72%</span>
+  </div>
+
+  <br>
+
+  <!-- Chart grid -->
+  <div class="chart-grid">
+    <div class="chart-card full" id="chart1"></div>
+    <div class="chart-row">
+      <div class="chart-card half" id="chart2"></div>
+      <div class="chart-card half" id="chart3"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>PlurumTech &copy; <script>document.write(new Date().getFullYear())</script></footer>
+
+<!-- Background bars script -->
+<script src="bg-bars.js"></script>
+</body>
+</html>
